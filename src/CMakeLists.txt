@@ -6,8 +6,5 @@ idf_component_register(
         web_server.cpp
     INCLUDE_DIRS
         "."
-    EMBED_FILES
-        index.html
-        style.css
-        script.js
+
 )
