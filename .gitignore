@@ -1,0 +1,31 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolib/
+.piocache/
+.piotests/
+
+# Build artifacts
+*.o
+*.d
+*.elf
+*.map
+sdkconfig
+sdkconfig.old
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+dev_server.py
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
