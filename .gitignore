@@ -11,6 +11,7 @@
 *.elf
 *.map
 sdkconfig
+sdkconfig.*
 sdkconfig.old
 
 # Python
