@@ -11,8 +11,8 @@
 *.elf
 *.map
 sdkconfig
-sdkconfig.*
 sdkconfig.old
+sdkconfig.esp32*
 
 # Python
 __pycache__/
