@@ -6,6 +6,9 @@ idf_component_register(
         web_server.cpp
     INCLUDE_DIRS
         "."
+    REQUIRES
+        json
+        esp_timer
     EMBED_FILES
         html/index.html
         html/style.css

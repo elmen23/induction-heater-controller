@@ -42,59 +42,54 @@ esp_err_t mcpwm_init(void) {
     ESP_LOGI(TAG, "Initialising MCPWM (new API) — %u Hz base", MCPWM_RESOLUTION_HZ);
 
     /* ── Timer: 40 MHz, up-counter ── */
-    mcpwm_timer_config_t timer_cfg = {
-        .group_id         = 0,
-        .clk_src          = MCPWM_TIMER_CLK_SRC_DEFAULT,
-        .resolution_hz    = MCPWM_RESOLUTION_HZ,
-        .period_ticks     = 1,  // updated on first frequency set
-        .count_mode       = MCPWM_TIMER_COUNT_MODE_UP,
-    };
+    mcpwm_timer_config_t timer_cfg = {};
+    timer_cfg.group_id = 0;
+    timer_cfg.clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT;
+    timer_cfg.resolution_hz = MCPWM_RESOLUTION_HZ;
+    timer_cfg.count_mode = MCPWM_TIMER_COUNT_MODE_UP;
+    timer_cfg.period_ticks = 1;
     ESP_ERROR_CHECK(mcpwm_new_timer(&timer_cfg, &s_timer));
 
     /* ── Operator ── */
-    mcpwm_operator_config_t oper_cfg = {
-        .group_id = 0,
-    };
+    mcpwm_operator_config_t oper_cfg = {};
+    oper_cfg.group_id = 0;
     ESP_ERROR_CHECK(mcpwm_new_operator(&oper_cfg, &s_oper));
     ESP_ERROR_CHECK(mcpwm_operator_connect_timer(s_oper, s_timer));
 
     /* ── Comparator ── */
-    mcpwm_comparator_config_t cmpr_cfg = {
-        .flags.update_cmp_on_tez = true,
-    };
+    mcpwm_comparator_config_t cmpr_cfg = {};
+    cmpr_cfg.flags.update_cmp_on_tez = true;
     ESP_ERROR_CHECK(mcpwm_new_comparator(s_oper, &cmpr_cfg, &s_cmpr));
 
     /* ── Generator A (high-side) ── */
-    mcpwm_generator_config_t gen_a_cfg = { .gen_gpio_num = GPIO_PWM_A };
+    mcpwm_generator_config_t gen_a_cfg = {};
+    gen_a_cfg.gen_gpio_num = GPIO_PWM_A;
     ESP_ERROR_CHECK(mcpwm_new_generator(s_oper, &gen_a_cfg, &s_gen_a));
 
     /* ── Generator B (low-side, complementary) ── */
-    mcpwm_generator_config_t gen_b_cfg = { .gen_gpio_num = GPIO_PWM_B };
+    mcpwm_generator_config_t gen_b_cfg = {};
+    gen_b_cfg.gen_gpio_num = GPIO_PWM_B;
     ESP_ERROR_CHECK(mcpwm_new_generator(s_oper, &gen_b_cfg, &s_gen_b));
 
-    /* ── Default actions: gen A high on compare, low on timer zero ── */
+    /* ── Default actions: gen A high on timer zero, low on compare ── */
+    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(
+        s_gen_a, MCPWM_TIMER_EVENT_ZERO, MCPWM_GEN_ACTION_HIGH));
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(
         s_gen_a,
         MCPWM_GEN_COMPARE_EVENT_ACTION(
             MCPWM_TIMER_DIRECTION_UP, s_cmpr, MCPWM_GEN_ACTION_LOW)));
-    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_zero_event(
-        s_gen_a, MCPWM_GEN_ACTION_HIGH));
 
-    /* ── Gen B: complementary with dead time (ACTIVE_HIGH_COMPLIMENT) ── */
+    /* ── Gen B: complementary with dead time ── */
+    mcpwm_generator_set_action_on_timer_event(
+        s_gen_b, MCPWM_TIMER_EVENT_ZERO, MCPWM_GEN_ACTION_LOW);
     mcpwm_generator_set_action_on_compare_event(
         s_gen_b,
         MCPWM_GEN_COMPARE_EVENT_ACTION(
             MCPWM_TIMER_DIRECTION_UP, s_cmpr, MCPWM_GEN_ACTION_HIGH));
-    mcpwm_generator_set_action_on_zero_event(
-        s_gen_b, MCPWM_GEN_ACTION_LOW);
 
-    mcpwm_dead_time_config_t dt_cfg = {
-        .posedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_red_ns),
-        .negedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_fed_ns),
-        .flags = {
-            .invert_output    = false,
-        },
-    };
+    mcpwm_dead_time_config_t dt_cfg = {};
+    dt_cfg.posedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_red_ns);
+    dt_cfg.negedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_fed_ns);
     ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_a, s_gen_b, &dt_cfg));
 
     /* ── Set initial frequency & duty ── */
@@ -105,11 +100,10 @@ esp_err_t mcpwm_init(void) {
     ESP_ERROR_CHECK(mcpwm_timer_disable(s_timer));
 
     /* ── Master enable GPIO ── */
-    gpio_config_t en_gpio = {
-        .pin_bit_mask = BIT64(GPIO_ENABLE),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_down_en = GPIO_PULLDOWN_ENABLE,
-    };
+    gpio_config_t en_gpio = {};
+    en_gpio.pin_bit_mask = BIT64(GPIO_ENABLE);
+    en_gpio.mode = GPIO_MODE_OUTPUT;
+    en_gpio.pull_down_en = GPIO_PULLDOWN_ENABLE;
     gpio_config(&en_gpio);
     gpio_set_level(GPIO_ENABLE, 0);
 
@@ -171,11 +165,9 @@ esp_err_t mcpwm_set_dead_time(uint32_t red_ns, uint32_t fed_ns) {
         return ESP_ERR_INVALID_ARG;
     }
     // Reconfigure dead time on generator pair
-    mcpwm_dead_time_config_t dt_cfg = {
-        .posedge_delay_ticks = ns_to_ticks(red_ns),
-        .negedge_delay_ticks = ns_to_ticks(fed_ns),
-        .flags = { .invert_output = false },
-    };
+    mcpwm_dead_time_config_t dt_cfg = {};
+    dt_cfg.posedge_delay_ticks = ns_to_ticks(red_ns);
+    dt_cfg.negedge_delay_ticks = ns_to_ticks(fed_ns);
     ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_a, s_gen_b, &dt_cfg));
     s_cfg.dead_time_red_ns = red_ns;
     s_cfg.dead_time_fed_ns = fed_ns;
