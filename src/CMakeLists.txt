@@ -7,7 +7,7 @@ idf_component_register(
     INCLUDE_DIRS
         "."
     EMBED_FILES
-        html/index.html
-        html/style.css
-        html/script.js
+        index.html
+        style.css
+        script.js
 )
