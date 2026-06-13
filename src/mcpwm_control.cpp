@@ -73,7 +73,7 @@ esp_err_t mcpwm_init(void) {
 
     /* ── Default actions: gen A high on timer zero, low on compare ── */
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(
-        s_gen_a, MCPWM_TIMER_EVENT_ZERO, MCPWM_GEN_ACTION_HIGH));
+        s_gen_a, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH));
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(
         s_gen_a,
         MCPWM_GEN_COMPARE_EVENT_ACTION(
@@ -81,7 +81,7 @@ esp_err_t mcpwm_init(void) {
 
     /* ── Gen B: complementary with dead time ── */
     mcpwm_generator_set_action_on_timer_event(
-        s_gen_b, MCPWM_TIMER_EVENT_ZERO, MCPWM_GEN_ACTION_LOW);
+        s_gen_b, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_LOW);
     mcpwm_generator_set_action_on_compare_event(
         s_gen_b,
         MCPWM_GEN_COMPARE_EVENT_ACTION(
