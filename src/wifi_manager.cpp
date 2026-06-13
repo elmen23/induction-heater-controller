@@ -3,6 +3,7 @@
 #include "esp_wifi.h"
 #include "esp_netif.h"
 #include "nvs_flash.h"
+#include <cstring>
 
 static const char *TAG = "WiFi";
 
@@ -51,16 +52,13 @@ esp_err_t wifi_init_ap(void) {
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
         WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
 
-    wifi_config_t ap_cfg = {
-        .ap = {
-            .ssid           = WIFI_AP_SSID,
-            .password       = WIFI_AP_PASS,
-            .ssid_len       = 0,
-            .channel        = WIFI_AP_CHANNEL,
-            .authmode       = WIFI_AUTH_WPA_WPA2_PSK,
-            .max_connection = WIFI_AP_MAX_CONN,
-        },
-    };
+    wifi_config_t ap_cfg = {};
+    memcpy(ap_cfg.ap.ssid, WIFI_AP_SSID, sizeof(WIFI_AP_SSID));
+    memcpy(ap_cfg.ap.password, WIFI_AP_PASS, sizeof(WIFI_AP_PASS));
+    ap_cfg.ap.ssid_len = 0;
+    ap_cfg.ap.channel = WIFI_AP_CHANNEL;
+    ap_cfg.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+    ap_cfg.ap.max_connection = WIFI_AP_MAX_CONN;
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_cfg));
     ESP_ERROR_CHECK(esp_wifi_start());

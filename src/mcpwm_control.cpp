@@ -72,20 +72,23 @@ esp_err_t mcpwm_init(void) {
     ESP_ERROR_CHECK(mcpwm_new_generator(s_oper, &gen_b_cfg, &s_gen_b));
 
     /* ── Default actions: gen A high on timer zero, low on compare ── */
-    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(
-        s_gen_a, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH));
+    mcpwm_gen_timer_event_action_t ev_act;
+    ev_act = MCPWM_GEN_TIMER_EVENT_ACTION(
+        MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH);
+    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(s_gen_a, ev_act));
     ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(
         s_gen_a,
         MCPWM_GEN_COMPARE_EVENT_ACTION(
             MCPWM_TIMER_DIRECTION_UP, s_cmpr, MCPWM_GEN_ACTION_LOW)));
 
     /* ── Gen B: complementary with dead time ── */
-    mcpwm_generator_set_action_on_timer_event(
-        s_gen_b, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_LOW);
-    mcpwm_generator_set_action_on_compare_event(
+    ev_act = MCPWM_GEN_TIMER_EVENT_ACTION(
+        MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_LOW);
+    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_timer_event(s_gen_b, ev_act));
+    ESP_ERROR_CHECK(mcpwm_generator_set_action_on_compare_event(
         s_gen_b,
         MCPWM_GEN_COMPARE_EVENT_ACTION(
-            MCPWM_TIMER_DIRECTION_UP, s_cmpr, MCPWM_GEN_ACTION_HIGH));
+            MCPWM_TIMER_DIRECTION_UP, s_cmpr, MCPWM_GEN_ACTION_HIGH)));
 
     mcpwm_dead_time_config_t dt_cfg = {};
     dt_cfg.posedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_red_ns);
