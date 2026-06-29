@@ -233,12 +233,14 @@ function drawWaveform() {
     const dtFed = parseFloat(dom.sliderFed.value) || 0;
     const enabled = dom.chkEnable.checked;
 
-    // Normalize dead time for visualization (scale to fit)
+    // Scale dead time for visualization (show at most 1/4 of on-time)
     const period = 1000 / freq; // period in μs
     const dutyOn = period * (duty / 100);
-    const dtVis = Math.min(dtRed, dtFed, dutyOn * 250) / 50; // scaled for vis
+    const offTime = period - dutyOn;
+    const scaleNs = 25; // ns per pixel
+    const dtVisA = Math.min(dtRed / scaleNs / 50, dutyOn * 0.25);
+    const dtVisB = Math.min(dtFed / scaleNs / 50, offTime * 0.25);
 
-    const xScale = w / 2; // show 2 full periods
     const yA = 22, yB = 82;
     const amp = 12;
 
@@ -251,21 +253,13 @@ function drawWaveform() {
         const cycleT = t % period;
         const x = (t / (period * 2)) * w;
 
-        // Channel A
+        // Channel A (high-side): ON from dtVisA to dutyOn, OFF otherwise
         let valA = 0;
-        if (cycleT < dtVis) valA = 0;              // dead time
-        else if (cycleT < dutyOn) valA = 1;        // on
-        else valA = 0;                              // off
+        if (cycleT >= dtVisA && cycleT < dutyOn) valA = 1;
 
-        // Channel B (complementary)
+        // Channel B (low-side, complementary): ON from dutyOn+dtVisB to period
         let valB = 0;
-        if (cycleT < dutyOn) valB = 1;             // overlap
-        else valB = 0;
-
-        // More realistic: B is complement of A with dead time
-        if (cycleT < dtVis) valB = 0;
-        else if (cycleT >= dutyOn && cycleT < period - dtFed/50) valB = 1;
-        else valB = 0;
+        if (cycleT >= dutyOn + dtVisB && cycleT < period) valB = 1;
 
         pathA += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + (valA ? (yA - amp) : (yA + 2));
         pathB += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + (valB ? (yB - amp) : (yB + 2));
@@ -319,10 +313,10 @@ function startPoll() {
 /* ─── Init ─── */
 document.addEventListener('DOMContentLoaded', () => {
     // Set initial badge values
-    dom.badgeFreq.textContent = dom.sliderFreq.value + '.0 kHz';
-    dom.badgeDuty.textContent = dom.sliderDuty.value + '.0 %';
-    dom.badgeRed.textContent = dom.sliderRed.value + ' ns';
-    dom.badgeFed.textContent = dom.sliderFed.value + ' ns';
+    dom.badgeFreq.textContent = parseFloat(dom.sliderFreq.value).toFixed(1) + ' kHz';
+    dom.badgeDuty.textContent = parseFloat(dom.sliderDuty.value).toFixed(1) + ' %';
+    dom.badgeRed.textContent = Math.round(parseFloat(dom.sliderRed.value)) + ' ns';
+    dom.badgeFed.textContent = Math.round(parseFloat(dom.sliderFed.value)) + ' ns';
 
     startPoll();
 });

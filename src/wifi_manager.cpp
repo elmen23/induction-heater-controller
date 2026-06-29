@@ -35,7 +35,13 @@ static void wifi_event_handler(void *arg, esp_event_base_t base,
 
 /* ─── Init common (NVS, netif, event loop) ─── */
 static esp_err_t wifi_common_init(void) {
-    ESP_ERROR_CHECK(nvs_flash_init());  // OK if already init'd
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "NVS erase required — erasing and re-init");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     return ESP_OK;

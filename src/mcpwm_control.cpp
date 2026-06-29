@@ -90,10 +90,15 @@ esp_err_t mcpwm_init(void) {
         MCPWM_GEN_COMPARE_EVENT_ACTION(
             MCPWM_TIMER_DIRECTION_UP, s_cmpr, MCPWM_GEN_ACTION_HIGH)));
 
-    mcpwm_dead_time_config_t dt_cfg = {};
-    dt_cfg.posedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_red_ns);
-    dt_cfg.negedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_fed_ns);
-    ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_a, s_gen_b, &dt_cfg));
+    // Gen A dead time: RED delay applied on its own posedge
+    mcpwm_dead_time_config_t dt_cfg_a = {};
+    dt_cfg_a.posedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_red_ns);
+    ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_a, s_gen_a, &dt_cfg_a));
+
+    // Gen B dead time: FED delay applied on its own posedge
+    mcpwm_dead_time_config_t dt_cfg_b = {};
+    dt_cfg_b.posedge_delay_ticks = ns_to_ticks(s_cfg.dead_time_fed_ns);
+    ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_b, s_gen_b, &dt_cfg_b));
 
     /* ── Set initial frequency & duty ── */
     mcpwm_set_frequency(s_cfg.frequency_hz);
@@ -167,11 +172,14 @@ esp_err_t mcpwm_set_dead_time(uint32_t red_ns, uint32_t fed_ns) {
         ESP_LOGW(TAG, "Dead time out of range");
         return ESP_ERR_INVALID_ARG;
     }
-    // Reconfigure dead time on generator pair
-    mcpwm_dead_time_config_t dt_cfg = {};
-    dt_cfg.posedge_delay_ticks = ns_to_ticks(red_ns);
-    dt_cfg.negedge_delay_ticks = ns_to_ticks(fed_ns);
-    ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_a, s_gen_b, &dt_cfg));
+    // Reconfigure dead time — each generator independently
+    mcpwm_dead_time_config_t dt_cfg_a = {};
+    dt_cfg_a.posedge_delay_ticks = ns_to_ticks(red_ns);
+    ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_a, s_gen_a, &dt_cfg_a));
+
+    mcpwm_dead_time_config_t dt_cfg_b = {};
+    dt_cfg_b.posedge_delay_ticks = ns_to_ticks(fed_ns);
+    ESP_ERROR_CHECK(mcpwm_generator_set_dead_time(s_gen_b, s_gen_b, &dt_cfg_b));
     s_cfg.dead_time_red_ns = red_ns;
     s_cfg.dead_time_fed_ns = fed_ns;
     return ESP_OK;
