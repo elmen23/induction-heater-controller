@@ -379,40 +379,6 @@ static esp_err_t wifi_scan_poll_handler(httpd_req_t *r) {
     return ESP_OK;
 }
 
-    if (scan_err == ESP_OK) {
-        int count = wifi_get_scan_count();
-        cJSON_AddNumberToObject(root, "count", count);
-
-        cJSON *networks = cJSON_AddArrayToObject(root, "networks");
-        for (int i = 0; i < count; i++) {
-            cJSON *net = cJSON_CreateObject();
-            cJSON_AddStringToObject(net, "ssid", wifi_get_scan_ssid(i));
-            cJSON_AddNumberToObject(net, "rssi", wifi_get_scan_rssi(i));
-
-            // Auth mode as string
-            const char *auth_str = "OPEN";
-            uint8_t auth = wifi_get_scan_auth(i);
-            if (auth == WIFI_AUTH_WEP) auth_str = "WEP";
-            else if (auth == WIFI_AUTH_WPA_PSK) auth_str = "WPA";
-            else if (auth == WIFI_AUTH_WPA2_PSK) auth_str = "WPA2";
-            else if (auth == WIFI_AUTH_WPA_WPA2_PSK) auth_str = "WPA/WPA2";
-            else if (auth == WIFI_AUTH_WPA3_PSK) auth_str = "WPA3";
-            else if (auth == WIFI_AUTH_WPA2_WPA3_PSK) auth_str = "WPA2/WPA3";
-            cJSON_AddStringToObject(net, "auth", auth_str);
-
-            cJSON_AddItemToArray(networks, net);
-        }
-    } else {
-        cJSON_AddStringToObject(root, "error", esp_err_to_name(scan_err));
-    }
-
-    char *json = cJSON_PrintUnformatted(root);
-    httpd_resp_set_type(r, "application/json");
-    httpd_resp_sendstr(r, json);
-    free(json);
-    cJSON_Delete(root);
-    return ESP_OK;
-}
 
 static const httpd_uri_t s_routes[] = {
     { .uri = "/",           .method = HTTP_GET,    .handler = handler_get_static,  .user_ctx = nullptr },
