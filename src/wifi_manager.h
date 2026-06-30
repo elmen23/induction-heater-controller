@@ -35,6 +35,13 @@ esp_err_t wifi_save_credentials(const char *ssid, const char *pass);
 esp_err_t wifi_load_credentials(char *ssid, size_t ssid_len, char *pass, size_t pass_len);
 void      wifi_clear_credentials(void);
 
+/* ─── WiFi Scan ─── */
+esp_err_t wifi_scan_networks(void);
+int wifi_get_scan_count(void);
+const char *wifi_get_scan_ssid(int index);
+int16_t wifi_get_scan_rssi(int index);
+uint8_t wifi_get_scan_auth(int index);
+
 /* ─── STA connection control ─── */
 esp_err_t wifi_connect_sta(const char *ssid, const char *pass);
 void      wifi_disconnect_sta(void);

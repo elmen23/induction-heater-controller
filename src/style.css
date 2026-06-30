@@ -754,3 +754,82 @@ body {
     color: var(--danger);
     border: 1px solid rgba(255,61,0,0.2);
 }
+
+
+/* ════════════════════════════════════════════
+ *  WiFi Scan UI
+ * ════════════════════════════════════════════ */
+.btn-scan {
+    display: block;
+    width: 100%;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 10px 20px;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+.btn-scan:hover {
+    background: rgba(0,180,255,0.08);
+}
+.btn-scan:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.scan-status {
+    padding: 6px 10px;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.78rem;
+    margin-bottom: 8px;
+    display: none;
+}
+.scan-info { display: block; background: rgba(0,180,255,0.08); color: var(--accent); }
+.scan-success { display: block; background: rgba(0,200,83,0.08); color: var(--success); }
+.scan-warning { display: block; background: rgba(255,193,7,0.08); color: var(--warning); }
+.scan-error { display: block; background: rgba(255,61,0,0.08); color: var(--danger); }
+.networks-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    background: rgba(0,0,0,0.15);
+}
+.networks-list::-webkit-scrollbar {
+    width: 6px;
+}
+.networks-list::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+.net-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.net-item:last-child {
+    border-bottom: none;
+}
+.net-item:hover {
+    background: rgba(0,180,255,0.06);
+}
+.net-item.selected {
+    background: rgba(0,180,255,0.12);
+    border-left: 2px solid var(--accent);
+}
+.net-ssid {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+}
+.net-meta {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}

@@ -243,6 +243,14 @@
             <hr class="modal-divider">
             <h3>Connect to WiFi Network</h3>
             <form id="wifiForm" onsubmit="return connectWifi(event)">
+            <hr class="modal-divider">
+            <h3>Available Networks</h3>
+            <button type="button" class="btn btn-scan" id="btnScan" onclick="scanWifi()">
+                <span class="btn-icon">&#x1f50d;</span> Scan Networks
+            </button>
+            <div class="scan-status" id="scanStatus"></div>
+            <div class="networks-list" id="networksList"></div>
+
                 <div class="form-group">
                     <label for="wifiSsid">SSID (Network Name)</label>
                     <input type="text" id="wifiSsid" class="form-input" placeholder="Enter WiFi SSID" required>

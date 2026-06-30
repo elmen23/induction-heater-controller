@@ -14,6 +14,11 @@ static esp_netif_t *s_netif_sta = nullptr;
 static char         s_ip_str[16]    = "0.0.0.0";
 static char         s_sta_ssid[33]  = "";
 static uint32_t     s_ap_sta_count  = 0;
+/* ─── WiFi scan state ─── */
+#define WIFI_SCAN_MAX_APS  20
+static wifi_ap_record_t s_scan_aps[WIFI_SCAN_MAX_APS];
+static uint16_t          s_scan_count = 0;
+
 
 /* ─── Forward declarations ─── */
 static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, void *data);
@@ -272,6 +277,64 @@ void wifi_disconnect_sta(void) {
     }
     strcpy(s_ip_str, "192.168.4.1");
     ESP_LOGI(TAG, "STA disconnected, AP remains active");
+}
+
+
+
+/* ════════════════════════════════════════════
+ *  WiFi Scan
+ * ════════════════════════════════════════════ */
+
+esp_err_t wifi_scan_networks(void) {
+    // Clear previous results
+    s_scan_count = 0;
+    memset(s_scan_aps, 0, sizeof(s_scan_aps));
+
+    // Configure scan
+    wifi_scan_config_t scan_cfg = {};
+    scan_cfg.ssid = nullptr;
+    scan_cfg.bssid = nullptr;
+    scan_cfg.channel = 0;           // all channels
+    scan_cfg.show_hidden = false;
+    scan_cfg.scan_type = WIFI_SCAN_TYPE_ACTIVE;
+    scan_cfg.scan_time.active.min = 100;
+    scan_cfg.scan_time.active.max = 300;
+
+    esp_err_t err = esp_wifi_scan_start(&scan_cfg, true);  // block = true
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Scan failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    uint16_t count = WIFI_SCAN_MAX_APS;
+    err = esp_wifi_scan_get_ap_records(&count, s_scan_aps);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Scan get records failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    s_scan_count = count;
+    ESP_LOGI(TAG, "Scan complete: %d networks found", count);
+    return ESP_OK;
+}
+
+int wifi_get_scan_count(void) {
+    return s_scan_count;
+}
+
+const char *wifi_get_scan_ssid(int index) {
+    if (index < 0 || index >= s_scan_count) return "";
+    return reinterpret_cast<const char *>(s_scan_aps[index].ssid);
+}
+
+int16_t wifi_get_scan_rssi(int index) {
+    if (index < 0 || index >= s_scan_count) return 0;
+    return s_scan_aps[index].rssi;
+}
+
+uint8_t wifi_get_scan_auth(int index) {
+    if (index < 0 || index >= s_scan_count) return 0;
+    return s_scan_aps[index].authmode;
 }
 
 /* ════════════════════════════════════════════
