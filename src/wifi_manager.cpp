@@ -14,6 +14,7 @@ static esp_netif_t *s_netif_sta = nullptr;
 static char         s_ip_str[16]    = "0.0.0.0";
 static char         s_sta_ssid[33]  = "";
 static uint32_t     s_ap_sta_count  = 0;
+static volatile bool s_scan_in_progress = false;  // non-blocking scan flag
 /* ─── WiFi scan state ─── */
 #define WIFI_SCAN_MAX_APS  20
 static wifi_ap_record_t s_scan_aps[WIFI_SCAN_MAX_APS];
@@ -61,6 +62,9 @@ static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
             ESP_LOGI(TAG, "Station left AP (total: %u)", s_ap_sta_count);
         } else if (id == WIFI_EVENT_STA_CONNECTED) {
             ESP_LOGI(TAG, "STA connected to router");
+        } else if (id == WIFI_EVENT_SCAN_DONE) {
+            s_scan_in_progress = false;
+            ESP_LOGI(TAG, "WiFi scan completed");
         } else if (id == WIFI_EVENT_STA_DISCONNECTED) {
             ESP_LOGW(TAG, "STA disconnected — will reconnect");
             esp_wifi_connect();
@@ -285,36 +289,42 @@ void wifi_disconnect_sta(void) {
  *  WiFi Scan
  * ════════════════════════════════════════════ */
 
-esp_err_t wifi_scan_networks(void) {
+esp_err_t wifi_scan_start(void) {
     // Clear previous results
     s_scan_count = 0;
     memset(s_scan_aps, 0, sizeof(s_scan_aps));
+    s_scan_in_progress = true;
 
-    // Configure scan
     wifi_scan_config_t scan_cfg = {};
     scan_cfg.ssid = nullptr;
     scan_cfg.bssid = nullptr;
-    scan_cfg.channel = 0;           // all channels
+    scan_cfg.channel = 0;
     scan_cfg.show_hidden = false;
     scan_cfg.scan_type = WIFI_SCAN_TYPE_ACTIVE;
     scan_cfg.scan_time.active.min = 100;
     scan_cfg.scan_time.active.max = 300;
 
-    esp_err_t err = esp_wifi_scan_start(&scan_cfg, true);  // block = true
+    esp_err_t err = esp_wifi_scan_start(&scan_cfg, false);  // non-blocking!
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Scan failed: %s", esp_err_to_name(err));
-        return err;
+        ESP_LOGE(TAG, "Scan start failed: %s", esp_err_to_name(err));
+        s_scan_in_progress = false;
     }
+    return err;
+}
 
+bool wifi_scan_is_done(void) {
+    return !s_scan_in_progress;
+}
+
+esp_err_t wifi_scan_get_results(void) {
     uint16_t count = WIFI_SCAN_MAX_APS;
-    err = esp_wifi_scan_get_ap_records(&count, s_scan_aps);
+    esp_err_t err = esp_wifi_scan_get_ap_records(&count, s_scan_aps);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Scan get records failed: %s", esp_err_to_name(err));
         return err;
     }
-
     s_scan_count = count;
-    ESP_LOGI(TAG, "Scan complete: %d networks found", count);
+    ESP_LOGI(TAG, "Scan results: %d networks", count);
     return ESP_OK;
 }
 

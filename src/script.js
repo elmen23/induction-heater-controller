@@ -452,69 +452,124 @@ function forgetWifi() {
  *  WiFi Scan
  * ════════════════════════════════════════════ */
 
+
+/* ════════════════════════════════════════════
+ *  WiFi Scan (non-blocking with async polling)
+ * ════════════════════════════════════════════ */
+
+var scanPollTimer = null;
+
 function scanWifi() {
     var btn = document.getElementById('btnScan');
     var statusEl = document.getElementById('scanStatus');
     var listEl = document.getElementById('networksList');
 
+    if (scanPollTimer) {
+        clearInterval(scanPollTimer);
+        scanPollTimer = null;
+    }
+
     btn.disabled = true;
     btn.innerHTML = '<span class="btn-icon">&#x23f3;</span> Scanning...';
     statusEl.textContent = 'Scanning...';
     statusEl.className = 'scan-status scan-info';
-    listEl.innerHTML = '';
+    listEl.innerHTML = '<div class="net-item" style="justify-content:center;color:var(--text-muted)">Scanning networks...</div>';
 
-    fetch('/api/wifi/scan')
+    // Step 1: Start the scan (non-blocking)
+    fetch('/api/wifi/scan', { method: 'POST' })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            if (data.success && data.count > 0) {
-                statusEl.textContent = 'Found ' + data.count + ' networks';
-                statusEl.className = 'scan-status scan-success';
-
-                // Create a clickable list
-                data.networks.forEach(function(net, i) {
-                    var item = document.createElement('div');
-                    item.className = 'net-item';
-
-                    var ssid = net.ssid || '<hidden>';
-                    if (!ssid || ssid.trim() === '') ssid = '<hidden>';
-
-                    var bars = '';
-                    var rssi = net.rssi;
-                    if (rssi > -50) bars = '&#x1f4f6;';
-                    else if (rssi > -70) bars = '&#x1f4f5;';
-                    else if (rssi > -85) bars = '&#x1f4f3;';
-                    else bars = '&#x1f4f4;';
-
-                    item.innerHTML = '<span class="net-ssid">' + bars + ' ' + escapeHtml(ssid) + '</span>'
-                        + '<span class="net-meta">' + net.auth + ' | ' + rssi + ' dBm</span>';
-
-                    item.onclick = function() {
-                        document.getElementById('wifiSsid').value = ssid;
-                        document.getElementById('wifiPass').focus();
-                        // Highlight selected
-                        var allItems = listEl.querySelectorAll('.net-item');
-                        allItems.forEach(function(el) { el.classList.remove('selected'); });
-                        item.classList.add('selected');
-                    };
-
-                    listEl.appendChild(item);
-                });
-            } else if (data.success) {
-                statusEl.textContent = 'No networks found';
-                statusEl.className = 'scan-status scan-warning';
+            if (data.status === 'scanning') {
+                // Step 2: Poll for results every 500ms
+                scanPollTimer = setInterval(function() {
+                    pollScanResults();
+                }, 500);
             } else {
-                statusEl.textContent = 'Scan failed: ' + (data.error || 'unknown error');
-                statusEl.className = 'scan-status scan-error';
+                finishScan(null, 'Failed to start scan');
             }
         })
         .catch(function(err) {
-            statusEl.textContent = 'Scan error: ' + err.message;
-            statusEl.className = 'scan-status scan-error';
-        })
-        .finally(function() {
-            btn.disabled = false;
-            btn.innerHTML = '<span class="btn-icon">&#x1f50d;</span> Scan Networks';
+            finishScan(null, 'Error: ' + err.message);
         });
+}
+
+function pollScanResults() {
+    fetch('/api/wifi/scan')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'done' || data.status === 'error') {
+                if (scanPollTimer) {
+                    clearInterval(scanPollTimer);
+                    scanPollTimer = null;
+                }
+                if (data.status === 'done') {
+                    finishScan(data);
+                } else {
+                    finishScan(null, data.error || 'Scan failed');
+                }
+            }
+            // else: still scanning, keep polling
+        })
+        .catch(function(err) {
+            if (scanPollTimer) {
+                clearInterval(scanPollTimer);
+                scanPollTimer = null;
+            }
+            finishScan(null, 'Poll error: ' + err.message);
+        });
+}
+
+function finishScan(data, errorMsg) {
+    var btn = document.getElementById('btnScan');
+    var statusEl = document.getElementById('scanStatus');
+    var listEl = document.getElementById('networksList');
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-icon">&#x1f50d;</span> Scan Networks';
+
+    if (errorMsg) {
+        statusEl.textContent = errorMsg;
+        statusEl.className = 'scan-status scan-error';
+        listEl.innerHTML = '';
+        return;
+    }
+
+    if (data.count > 0) {
+        statusEl.textContent = 'Found ' + data.count + ' networks';
+        statusEl.className = 'scan-status scan-success';
+        listEl.innerHTML = '';
+
+        data.networks.forEach(function(net) {
+            var item = document.createElement('div');
+            item.className = 'net-item';
+
+            var ssid = net.ssid || '';
+            if (!ssid || ssid.trim() === '') ssid = '<hidden>';
+
+            var bars = '';
+            if (net.rssi > -50) bars = '&#x1f4f6;';
+            else if (net.rssi > -70) bars = '&#x1f4f5;';
+            else if (net.rssi > -85) bars = '&#x1f4f3;';
+            else bars = '&#x1f4f4;';
+
+            item.innerHTML = '<span class="net-ssid">' + bars + ' ' + escapeHtml(ssid) + '</span>'
+                + '<span class="net-meta">' + net.auth + ' | ' + net.rssi + ' dBm</span>';
+
+            item.onclick = function() {
+                document.getElementById('wifiSsid').value = ssid;
+                document.getElementById('wifiPass').focus();
+                var allItems = listEl.querySelectorAll('.net-item');
+                allItems.forEach(function(el) { el.classList.remove('selected'); });
+                item.classList.add('selected');
+            };
+
+            listEl.appendChild(item);
+        });
+    } else {
+        statusEl.textContent = 'No networks found';
+        statusEl.className = 'scan-status scan-warning';
+        listEl.innerHTML = '';
+    }
 }
 
 function escapeHtml(text) {
