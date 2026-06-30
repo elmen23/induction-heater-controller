@@ -320,3 +320,136 @@ document.addEventListener('DOMContentLoaded', () => {
 
     startPoll();
 });
+
+
+/* ════════════════════════════════════════════
+ *  WiFi Configuration Modal
+ * ════════════════════════════════════════════ */
+
+function openWifiModal() {
+    document.getElementById('wifiModal').classList.add('open');
+    fetchWifiStatus();
+}
+
+function closeWifiModal() {
+    document.getElementById('wifiModal').classList.remove('open');
+}
+
+function fetchWifiStatus() {
+    fetch('/api/wifi')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            document.getElementById('modalWifiMode').textContent = data.mode || '--';
+            document.getElementById('modalApSsid').textContent = data.ap_ssid || 'IH-2000';
+            document.getElementById('modalApIp').textContent = data.ap_ip || '192.168.4.1';
+            document.getElementById('modalApClients').textContent = data.ap_clients || 0;
+
+            var staSsidEl = document.getElementById('modalStaSsid');
+            var staIpEl = document.getElementById('modalStaIp');
+
+            if (data.sta_connected) {
+                staSsidEl.textContent = data.sta_ssid || 'Connected';
+                staSsidEl.className = 'wifi-stat-value text-success';
+                staIpEl.textContent = data.ip || '--';
+            } else if (data.has_credentials) {
+                staSsidEl.textContent = data.sta_ssid + ' (connecting...)';
+                staSsidEl.className = 'wifi-stat-value text-warning';
+                staIpEl.textContent = '--';
+            } else {
+                staSsidEl.textContent = 'Not connected';
+                staSsidEl.className = 'wifi-stat-value';
+                staIpEl.textContent = '--';
+            }
+
+            // Update topbar wifi badge too
+            var wifiInfo = document.getElementById('wifiInfo');
+            if (data.sta_connected) {
+                wifiInfo.textContent = data.sta_ssid || 'STA';
+            } else {
+                wifiInfo.textContent = data.ap_ssid || 'AP';
+            }
+        })
+        .catch(function(err) {
+            console.log('WiFi status fetch error:', err);
+        });
+}
+
+function connectWifi(event) {
+    event.preventDefault();
+    var ssid = document.getElementById('wifiSsid').value.trim();
+    var pass = document.getElementById('wifiPass').value;
+    var msgEl = document.getElementById('wifiMsg');
+    var btn = document.getElementById('btnWifiConnect');
+
+    if (!ssid) {
+        msgEl.textContent = 'Please enter a network name';
+        msgEl.className = 'wifi-msg wifi-msg-error';
+        return false;
+    }
+
+    msgEl.textContent = 'Connecting...';
+    msgEl.className = 'wifi-msg wifi-msg-info';
+    btn.disabled = true;
+    btn.textContent = 'Connecting...';
+
+    fetch('/api/wifi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssid: ssid, password: pass })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            msgEl.textContent = 'Saved! Connecting to ' + ssid + '...';
+            msgEl.className = 'wifi-msg wifi-msg-success';
+            setTimeout(fetchWifiStatus, 2000);
+        } else {
+            msgEl.textContent = 'Failed to save credentials';
+            msgEl.className = 'wifi-msg wifi-msg-error';
+        }
+    })
+    .catch(function(err) {
+        msgEl.textContent = 'Connection error';
+        msgEl.className = 'wifi-msg wifi-msg-error';
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">&#x1f4e1;</span> Connect';
+    });
+
+    return false;
+}
+
+function forgetWifi() {
+    if (!confirm('Forget WiFi network? The device will stay in AP mode.')) return;
+
+    var msgEl = document.getElementById('wifiMsg');
+    var btn = document.getElementById('btnWifiForget');
+    btn.disabled = true;
+    msgEl.textContent = 'Forgetting network...';
+    msgEl.className = 'wifi-msg wifi-msg-info';
+
+    fetch('/api/wifi/forget', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            msgEl.textContent = 'Network forgotten. Device is in AP mode only.';
+            msgEl.className = 'wifi-msg wifi-msg-success';
+            setTimeout(fetchWifiStatus, 1000);
+        }
+    })
+    .catch(function(err) {
+        msgEl.textContent = 'Error forgetting network';
+        msgEl.className = 'wifi-msg wifi-msg-error';
+    })
+    .finally(function() {
+        btn.disabled = false;
+    });
+}
+
+// Close modal on overlay click
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'wifiModal') {
+        closeWifiModal();
+    }
+});

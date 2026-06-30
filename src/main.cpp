@@ -16,9 +16,9 @@ static void feedback_task(void *pv_param);
  * ════════════════════════════════════════════ */
 
 extern "C" void app_main(void) {
-    ESP_LOGI(TAG, "╔══════════════════════════════════╗");
-    ESP_LOGI(TAG, "║   IH-2000 Induction Heater v1.0  ║");
-    ESP_LOGI(TAG, "╚══════════════════════════════════╝");
+    ESP_LOGI(TAG, "========================================");
+    ESP_LOGI(TAG, "  IH-2000 Induction Heater v1.0");
+    ESP_LOGI(TAG, "========================================");
 
     /* ── 1. Init MCPWM ── */
     ESP_LOGI(TAG, "[1/4] Initialising MCPWM ...");
@@ -29,9 +29,9 @@ extern "C" void app_main(void) {
         esp_restart();
     }
 
-    /* ── 2. Start WiFi (AP mode — configurable for STA) ── */
+    /* ── 2. Start WiFi (AP+STA — AP always on, try STA with saved creds) ── */
     ESP_LOGI(TAG, "[2/4] Starting WiFi (AP mode) ...");
-    err = wifi_init_ap();
+    err = wifi_init_ap_sta();  // AP always on + try STA with saved creds
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "WiFi init FAILED — continuing without network");
     }
@@ -57,7 +57,7 @@ extern "C" void app_main(void) {
 
     ESP_LOGI(TAG, "────────────────────────────────────");
     ESP_LOGI(TAG, "System ready!");
-    ESP_LOGI(TAG, " WiFi AP:  SSID='%s'  IP=%s", WIFI_AP_SSID, wifi_get_ip_str());
+    ESP_LOGI(TAG, " WiFi:     Mode=%s  AP='%s'  IP=%s", wifi_get_mode_str(), WIFI_AP_SSID, wifi_get_ip_str());
     ESP_LOGI(TAG, " Web UI:   http://%s", wifi_get_ip_str());
     ESP_LOGI(TAG, " PWM Out:  A=GPIO%d  B=GPIO%d", GPIO_PWM_A, GPIO_PWM_B);
     ESP_LOGI(TAG, "────────────────────────────────────");

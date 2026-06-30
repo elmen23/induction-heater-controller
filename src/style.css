@@ -563,3 +563,194 @@ body {
     .dashboard { grid-template-columns: 1fr; }
     .numeric-input-row { flex-direction: column; align-items: stretch; gap: 0.5rem; }
 }
+
+
+/* ════════════════════════════════════════════
+ *  WiFi Settings Modal
+ * ════════════════════════════════════════════ */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.open {
+    display: flex;
+}
+.modal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 440px;
+    max-width: 94vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: modalIn 0.2s ease-out;
+}
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+}
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+.modal-close:hover {
+    color: var(--text-primary);
+}
+.modal-body {
+    padding: 20px 22px;
+}
+.wifi-status-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    padding: 14px;
+    margin-bottom: 16px;
+}
+.wifi-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+}
+.wifi-status-row + .wifi-status-row {
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+.wifi-stat-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+.wifi-stat-value {
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.modal-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+}
+.modal-body h3 {
+    margin: 0 0 12px;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.form-group {
+    margin-bottom: 14px;
+}
+.form-group label {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: var(--font-mono);
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,180,255,0.15);
+}
+.form-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+.btn-icon { margin-right: 6px; }
+.btn-primary {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    flex: 1;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+}
+.btn-secondary:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+.wifi-msg {
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.8rem;
+    display: none;
+}
+.wifi-msg-info {
+    display: block;
+    background: rgba(0,180,255,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(0,180,255,0.2);
+}
+.wifi-msg-success {
+    display: block;
+    background: rgba(0,200,83,0.1);
+    color: var(--success);
+    border: 1px solid rgba(0,200,83,0.2);
+}
+.wifi-msg-error {
+    display: block;
+    background: rgba(255,61,0,0.1);
+    color: var(--danger);
+    border: 1px solid rgba(255,61,0,0.2);
+}

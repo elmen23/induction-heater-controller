@@ -208,8 +208,100 @@ static esp_err_t handler_options(httpd_req_t *req) {
 }
 
 /* ════════════════════════════════════════════
- *  URI registration
+ *  GET /api/wifi  —  WiFi status
  * ════════════════════════════════════════════ */
+static esp_err_t wifi_get_handler(httpd_req_t *r) {
+    httpd_resp_set_hdr(r, "Access-Control-Allow-Origin", "*");
+
+    char sta_ssid[33] = "";
+    char sta_pass[65] = "";
+    esp_err_t cred_ret = wifi_load_credentials(sta_ssid, sizeof(sta_ssid),
+                                                sta_pass, sizeof(sta_pass));
+    bool has_creds = (cred_ret == ESP_OK && strlen(sta_ssid) > 0);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "mode", wifi_get_mode_str());
+    cJSON_AddStringToObject(root, "ap_ssid", WIFI_AP_SSID);
+    cJSON_AddStringToObject(root, "ap_ip", "192.168.4.1");
+    cJSON_AddStringToObject(root, "ip", wifi_get_ip_str());
+    cJSON_AddBoolToObject(root, "sta_connected", wifi_is_connected());
+    cJSON_AddBoolToObject(root, "has_credentials", has_creds);
+    cJSON_AddStringToObject(root, "sta_ssid", has_creds ? sta_ssid : "");
+    cJSON_AddNumberToObject(root, "ap_clients", wifi_get_ap_sta_count());
+
+    char *json = cJSON_PrintUnformatted(root);
+    httpd_resp_set_type(r, "application/json");
+    httpd_resp_sendstr(r, json);
+    free(json);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
+/* ════════════════════════════════════════════
+ *  POST /api/wifi  —  Set WiFi credentials & connect
+ * ════════════════════════════════════════════ */
+static esp_err_t wifi_post_handler(httpd_req_t *r) {
+    httpd_resp_set_hdr(r, "Access-Control-Allow-Origin", "*");
+
+    char buf[256] = {0};
+    int received = httpd_req_recv(r, buf, sizeof(buf) - 1);
+    if (received <= 0) {
+        httpd_resp_send_err(r, HTTPD_400_BAD_REQUEST, "Empty body");
+        return ESP_FAIL;
+    }
+    buf[received] = '\0';
+
+    cJSON *root = cJSON_Parse(buf);
+    if (!root) {
+        httpd_resp_send_err(r, HTTPD_400_BAD_REQUEST, "Invalid JSON");
+        return ESP_FAIL;
+    }
+
+    cJSON *ssid_item = cJSON_GetObjectItem(root, "ssid");
+    cJSON *pass_item = cJSON_GetObjectItem(root, "password");
+
+    if (!cJSON_IsString(ssid_item) || strlen(ssid_item->valuestring) == 0) {
+        httpd_resp_send_err(r, HTTPD_400_BAD_REQUEST, "SSID required");
+        cJSON_Delete(root);
+        return ESP_FAIL;
+    }
+
+    const char *ssid = ssid_item->valuestring;
+    const char *pass = (cJSON_IsString(pass_item)) ? pass_item->valuestring : "";
+
+    esp_err_t err = wifi_connect_sta(ssid, pass);
+
+    cJSON *resp = cJSON_CreateObject();
+    cJSON_AddBoolToObject(resp, "success", err == ESP_OK);
+    cJSON_AddStringToObject(resp, "ssid", ssid);
+
+    char *json = cJSON_PrintUnformatted(resp);
+    httpd_resp_set_type(r, "application/json");
+    httpd_resp_sendstr(r, json);
+    free(json);
+    cJSON_Delete(root);
+    cJSON_Delete(resp);
+    return ESP_OK;
+}
+
+/* ════════════════════════════════════════════
+ *  POST /api/wifi/forget  —  Clear credentials & disconnect STA
+ * ════════════════════════════════════════════ */
+static esp_err_t wifi_forget_handler(httpd_req_t *r) {
+    httpd_resp_set_hdr(r, "Access-Control-Allow-Origin", "*");
+
+    wifi_disconnect_sta();
+
+    cJSON *resp = cJSON_CreateObject();
+    cJSON_AddBoolToObject(resp, "success", true);
+
+    char *json = cJSON_PrintUnformatted(resp);
+    httpd_resp_set_type(r, "application/json");
+    httpd_resp_sendstr(r, json);
+    free(json);
+    cJSON_Delete(resp);
+    return ESP_OK;
+}
 
 static const httpd_uri_t s_routes[] = {
     { .uri = "/",           .method = HTTP_GET,    .handler = handler_get_static,  .user_ctx = nullptr },
@@ -226,6 +318,11 @@ static const httpd_uri_t s_routes[] = {
 
     { .uri = "/api/estop",  .method = HTTP_POST,   .handler = handler_post_estop,  .user_ctx = nullptr },
     { .uri = "/api/estop",  .method = HTTP_OPTIONS,.handler = handler_options,     .user_ctx = nullptr },
+
+    { .uri = "/api/wifi",       .method = HTTP_GET,    .handler = wifi_get_handler,      .user_ctx = nullptr },
+    { .uri = "/api/wifi",       .method = HTTP_POST,   .handler = wifi_post_handler,     .user_ctx = nullptr },
+    { .uri = "/api/wifi",       .method = HTTP_OPTIONS,.handler = handler_options,       .user_ctx = nullptr },
+    { .uri = "/api/wifi/forget",.method = HTTP_POST,   .handler = wifi_forget_handler,   .user_ctx = nullptr },
 };
 
 /* ════════════════════════════════════════════

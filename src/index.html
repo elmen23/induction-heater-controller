@@ -22,7 +22,7 @@
                 <span class="status-dot" id="statusDot"></span>
                 <span id="statusText">INITIALIZING</span>
             </div>
-            <div class="wifi-badge" id="wifiBadge">
+            <div class="wifi-badge" id="wifiBadge" style="cursor:pointer" onclick="openWifiModal()">
                 <span class="wifi-icon">📶</span>
                 <span id="wifiInfo">--</span>
             </div>
@@ -205,5 +205,65 @@
     </main>
 
     <script src="/script.js"></script>
+
+<!-- ═══ WiFi SETTINGS MODAL ═══ -->
+<div class="modal-overlay" id="wifiModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h2>WiFi Settings</h2>
+            <button class="modal-close" onclick="closeWifiModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="wifi-status-card">
+                <div class="wifi-status-row">
+                    <span class="wifi-stat-label">Mode</span>
+                    <span class="wifi-stat-value" id="modalWifiMode">--</span>
+                </div>
+                <div class="wifi-status-row">
+                    <span class="wifi-stat-label">AP Network</span>
+                    <span class="wifi-stat-value" id="modalApSsid">IH-2000</span>
+                </div>
+                <div class="wifi-status-row">
+                    <span class="wifi-stat-label">AP IP</span>
+                    <span class="wifi-stat-value" id="modalApIp">192.168.4.1</span>
+                </div>
+                <div class="wifi-status-row">
+                    <span class="wifi-stat-label">AP Clients</span>
+                    <span class="wifi-stat-value" id="modalApClients">0</span>
+                </div>
+                <div class="wifi-status-row" id="staStatusRow">
+                    <span class="wifi-stat-label">STA Network</span>
+                    <span class="wifi-stat-value" id="modalStaSsid">Not connected</span>
+                </div>
+                <div class="wifi-status-row" id="staIpRow">
+                    <span class="wifi-stat-label">STA IP</span>
+                    <span class="wifi-stat-value" id="modalStaIp">--</span>
+                </div>
+            </div>
+            <hr class="modal-divider">
+            <h3>Connect to WiFi Network</h3>
+            <form id="wifiForm" onsubmit="return connectWifi(event)">
+                <div class="form-group">
+                    <label for="wifiSsid">SSID (Network Name)</label>
+                    <input type="text" id="wifiSsid" class="form-input" placeholder="Enter WiFi SSID" required>
+                </div>
+                <div class="form-group">
+                    <label for="wifiPass">Password</label>
+                    <input type="password" id="wifiPass" class="form-input" placeholder="Enter WiFi password">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="btnWifiConnect">
+                        <span class="btn-icon">&#x1f4e1;</span> Connect
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btnWifiForget" onclick="forgetWifi()">
+                        <span class="btn-icon">&#x274c;</span> Forget Network
+                    </button>
+                </div>
+                <div class="wifi-msg" id="wifiMsg"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
