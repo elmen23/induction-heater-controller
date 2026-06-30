@@ -1,6 +1,7 @@
 #include "web_server.h"
 #include "mcpwm_control.h"
 #include "wifi_manager.h"
+#include "esp_wifi.h"  // WIFI_AUTH_* constants
 #include "esp_log.h"
 #include "esp_http_server.h"
 #include "esp_timer.h"
