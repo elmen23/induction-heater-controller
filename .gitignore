@@ -18,7 +18,6 @@ sdkconfig.esp32*
 __pycache__/
 *.pyc
 *.pyo
-dev_server.py
 /tmp/
 
 # IDE
@@ -30,3 +29,7 @@ dev_server.py
 # OS
 .DS_Store
 Thumbs.db
+
+# CI-built firmware (built on GitHub Actions)
+firmware/
+!firmware/.gitkeep
